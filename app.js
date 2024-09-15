@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const apiKey = 'bd5e378503939ddaee76f12ad7a97608';
+ const apiKey = 'bd5e378503939ddaee76f12ad7a97608';
     const searchInput = document.getElementById('searchInput');
     const searchButton = document.getElementById('searchButton');
     const modeButton = document.getElementById('modeButton');
@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const hourlyForecast = document.getElementById('hourlyForecast');
     const fiveDayForecast = document.getElementById('fiveDayForecast');
     const weatherDetails = document.getElementById('weatherDetails');
+    const currentWeather = document.getElementById('currentWeather');
 
     // Toggle light/dark mode
     modeButton.addEventListener('click', () => {
@@ -44,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(data.message);
                 }
                 updateCurrentLocation(data);
+                updateCurrentWeather(data);
                 fetchHourlyForecast(data.coord.lat, data.coord.lon);
                 fetchFiveDayForecast(data.coord.lat, data.coord.lon);
                 updateWeatherDetails(data);
@@ -67,18 +69,42 @@ document.addEventListener('DOMContentLoaded', () => {
         dateDisplay.textContent = now.toLocaleDateString();
     }
 
+    function updateCurrentWeather(data) {
+        currentWeather.innerHTML = `
+            <p>Temperature: ${data.main.temp}°C</p>
+            <p>Feels Like: ${data.main.feels_like}°C</p>
+            <p>Weather: ${data.weather[0].description}</p>
+            <p>Humidity: ${data.main.humidity}%</p>
+            <p>Pressure: ${data.main.pressure} hPa</p>
+            <p>Wind Speed: ${data.wind.speed} m/s</p>
+        `;
+    }
+
     function fetchHourlyForecast(lat, lon) {
         fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`)
             .then(response => response.json())
             .then(data => {
                 const hourlyData = data.list.slice(0, 5); // Get next 5 hours
-                hourlyForecast.innerHTML = hourlyData.map(hour => `
-                    <div class="hour">
-                        <p>${new Date(hour.dt * 1000).toLocaleTimeString()}</p>
-                        <p>${hour.main.temp}°C</p>
-                        <p>${hour.weather[0].description}</p>
-                    </div>
-                `).join('');
+                hourlyForecast.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Temperature</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${hourlyData.map(hour => `
+                                <tr>
+                                    <td>${new Date(hour.dt * 1000).toLocaleTimeString()}</td>
+                                    <td>${hour.main.temp}°C</td>
+                                    <td>${hour.weather[0].description}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
             })
             .catch(error => {
                 console.error('Error fetching hourly forecast:', error);
@@ -90,13 +116,26 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(response => response.json())
             .then(data => {
                 const dailyData = data.list.filter((_, index) => index % 8 === 0); // Get daily data
-                fiveDayForecast.innerHTML = dailyData.map(day => `
-                    <div class="day">
-                        <p>${new Date(day.dt * 1000).toLocaleDateString()}</p>
-                        <p>${day.main.temp}°C</p>
-                        <p>${day.weather[0].description}</p>
-                    </div>
-                `).join('');
+                fiveDayForecast.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Temperature</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${dailyData.map(day => `
+                                <tr>
+                                    <td>${new Date(day.dt * 1000).toLocaleDateString()}</td>
+                                    <td>${day.main.temp}°C</td>
+                                    <td>${day.weather[0].description}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
             })
             .catch(error => {
                 console.error('Error fetching 5-day forecast:', error);
